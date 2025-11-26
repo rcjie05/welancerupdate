@@ -1,42 +1,57 @@
 <?php
-header('Content-Type: application/json');
+// api/add_task.php — FINAL VERSION: Uses fixed points + no auto-complete
 session_start();
-require 'config.php';  // ← MUST BE AFTER session_start() AND BEFORE ANY CHECK
+require 'config.php';
 
-// Only admin, hr, manager can create tasks
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['admin', 'hr', 'manager'])) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Login required']);
+    exit;
+}
+$userId = (int)$_SESSION['id'];
+$role   = $_SESSION['role'] ?? 'member';
+
+
+$data = json_decode(file_get_contents('php://input'), true);
+$title      = $data['title'] ?? '';
+$project_id = $data['project_id'] ?? 0;
+$user_id    = $data['user_id'] ?? 0;
+
+if (!$title || !$project_id || !$user_id) {
+    echo json_encode(['success' => false, 'error' => 'Missing data']);
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
+// GET FIXED POINTS FROM PROJECT
+$stmt = $pdo->prepare("SELECT points_per_task, task_quantity FROM projects WHERE id = ?");
+$stmt->execute([$project_id]);
+$project = $stmt->fetch();
 
-$title      = trim($input['title'] ?? '');
-$project_id = (int)($input['project_id'] ?? 0);
-$user_id    = (int)($input['user_id'] ?? 0);
-$status     = $input['status'] ?? 'Pending';
-
-if (empty($title) || $project_id <= 0 || $user_id <= 0) {
-    echo json_encode(['success' => false, 'error' => 'Invalid data']);
+if (!$project) {
+    echo json_encode(['success' => false, 'error' => 'Project not found']);
     exit;
 }
 
-// Optional: Manager can only assign tasks in their own projects
-if ($_SESSION['role'] === 'manager') {
-    $stmt = $pdo->prepare("SELECT id FROM projects WHERE id = ? AND manager_id = ?");
-    $stmt->execute([$project_id, $_SESSION['user_id']]);
-    if (!$stmt->fetch()) {
-        echo json_encode(['success' => false, 'error' => 'Not your project']);
-        exit;
-    }
+$points = (int)$project['points_per_task'];
+
+// Prevent over-creation
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE project_id = ?");
+$stmt->execute([$project_id]);
+if ($stmt->fetchColumn() >= $project['task_quantity']) {
+    echo json_encode(['success' => false, 'error' => 'All tasks already assigned']);
+    exit;
 }
 
-try {
-    $stmt = $pdo->prepare("INSERT INTO tasks (title, project_id, user_id, status) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$title, $project_id, $user_id, $status]);
-    
-    echo json_encode(['success' => true, 'message' => 'Task created', 'id' => $pdo->lastInsertId()]);
-} catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => 'DB Error: ' . $e->getMessage()]);
-}
+// INSERT TASK — status = Pending, points = fixed
+$stmt = $pdo->prepare("
+    INSERT INTO tasks (title, project_id, user_id, status, points, proof_photo) 
+    VALUES (?, ?, ?, 'Pending', ?, NULL)
+");
+$stmt->execute([$title, $project_id, $user_id, $points]);
+
+echo json_encode([
+    'success' => true,
+    'message' => 'Task assigned!',
+    'points' => $points
+]);
 ?>

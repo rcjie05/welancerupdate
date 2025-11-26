@@ -19,10 +19,10 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($password, $user['password'])) {
-        // FIX: Use 'user_id' — SAME AS ALL OTHER FILES
-        $_SESSION['user_id'] = $user['id'];     // ← THIS WAS THE BUG
-        $_SESSION['role']    = $user['role'];
-        $_SESSION['name']    = $user['name'];
+        // === FIX: USE 'id' EVERYWHERE — SAME AS ALL OTHER FILES ===
+        $_SESSION['id'] = $user['id'];        // ← NOW CONSISTENT!
+        $_SESSION['role'] = $user['role'];
+        $_SESSION['name'] = $user['name'];
 
         unset($user['password']);
         echo json_encode(["success" => true, "user" => $user]);

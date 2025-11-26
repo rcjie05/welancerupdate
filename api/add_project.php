@@ -1,36 +1,46 @@
 <?php
-header('Content-Type: application/json');
+// api/add_project.php — ONLY creates project (tasks created later by manager)
 session_start();
 require 'config.php';
 
-if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'hr'])) {
-    echo json_encode(['success' => false, 'error' => 'Only Admin/HR can create projects']);
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['success' => false]); 
     exit;
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-$name = trim($input['name'] ?? '');
-$status = $input['status'] ?? 'Pending';
-$manager_id = $input['manager_id'] ?? null;
+$data = json_decode(file_get_contents('php://input'), true);
+$name           = trim($data['name'] ?? '');
+$manager_id     = $data['manager_id'] ?? $_SESSION['user_id'];
+$total_points   = (int)($data['points'] ?? 100);
+$task_quantity  = (int)($data['task_quantity'] ?? 5);
+$points_per_task = (int)($data['points_per_task'] ?? floor($total_points / $task_quantity));
 
-if (empty($name)) {
-    echo json_encode(['success' => false, 'error' => 'Project name required']);
+if (!$name || $task_quantity < 1 || $points_per_task < 1) {
+    echo json_encode(['success' => false, 'error' => 'Invalid data']);
     exit;
 }
-
-if (!$manager_id || !is_numeric($manager_id)) {
-    echo json_encode(['success' => false, 'error' => 'Please select a valid manager']);
-    exit;
-}
-
-$manager_id = (int)$manager_id;
 
 try {
-    $stmt = $pdo->prepare("INSERT INTO projects (name, status, manager_id) VALUES (?, ?, ?)");
-    $stmt->execute([$name, $status, $manager_id]);
-    
-    echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
+    $pdo->beginTransaction();
+
+    $stmt = $pdo->prepare("
+        INSERT INTO projects 
+        (name, manager_id, points, task_quantity, points_per_task, status) 
+        VALUES (?, ?, ?, ?, ?, 'In Progress')
+    ");
+    $stmt->execute([$name, $manager_id, $total_points, $task_quantity, $points_per_task]);
+    $project_id = $pdo->lastInsertId();
+
+    $pdo->commit();
+
+    echo json_encode([
+        'success' => true,
+        'project_id' => $project_id,
+        'message' => "Project created! Now create and assign $task_quantity tasks."
+    ]);
+
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'error' => 'Failed to create project']);
+    $pdo->rollBack();
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
 ?>

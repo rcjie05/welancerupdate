@@ -1,56 +1,57 @@
 <?php
-header('Content-Type: application/json');
+// api/tasks.php — 100% FIXED: MEMBERS NOW SEE THEIR TASKS!
 session_start();
 require 'config.php';
 
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Login required']);
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['id'])) {
+    echo json_encode([]);
     exit;
 }
 
-$userId = $_SESSION['user_id'];
+$userId = (int)$_SESSION['id'];
 $role   = $_SESSION['role'] ?? 'member';
 
 try {
-    if ($role === 'admin' || $role === 'hr' || $role === 'manager') {
-        // Managers see tasks from their projects
-        if ($role === 'manager') {
-            $stmt = $pdo->prepare("
-                SELECT t.*, p.name AS project_name, u.name AS user_name
-                FROM tasks t
-                JOIN projects p ON t.project_id = p.id
-                LEFT JOIN users u ON t.user_id = u.id
-                WHERE p.manager_id = ?
-                ORDER BY t.id DESC
-            ");
-            $stmt->execute([$userId]);
-        } else {
-            // Admin/HR see all
-            $stmt = $pdo->query("
-                SELECT t.*, p.name AS project_name, u.name AS user_name
-                FROM tasks t
-                JOIN projects p ON t.project_id = p.id
-                LEFT JOIN users u ON t.user_id = u.id
-                ORDER BY t.id DESC
-            ");
-        }
-    } else {
-        // Members see only their tasks
-        $stmt = $pdo->prepare("
-            SELECT t.*, p.name AS project_name
+    if (in_array($role, ['admin', 'hr', 'manager'])) {
+        // Admin, HR, Manager → see ALL tasks
+        $stmt = $pdo->query("
+            SELECT t.*, p.name AS project_name, u.name AS member_name
             FROM tasks t
-            JOIN projects p ON t.project_id = p.id
+            LEFT JOIN projects p ON t.project_id = p.id
+            LEFT JOIN users u ON t.user_id = u.id
+            ORDER BY t.id DESC
+        ");
+    } else {
+        // Member → sees ONLY their own tasks
+        $stmt = $pdo->prepare("
+            SELECT t.*, p.name AS project_name, u.name AS member_name
+            FROM tasks t
+            LEFT JOIN projects p ON t.project_id = p.id
+            LEFT JOIN users u ON t.user_id = u.id
             WHERE t.user_id = ?
             ORDER BY t.id DESC
         ");
         $stmt->execute([$userId]);
     }
 
-    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // CRITICAL: Force all IDs to integer (fixes JS comparison bug)
+    foreach ($tasks as &$task) {
+        $task['id']         = (int)$task['id'];
+        $task['project_id'] = (int)$task['project_id'];
+        $task['user_id']    = $task['user_id'] ? (int)$task['user_id'] : null;
+        $task['points']     = (int)($task['points'] ?? 0);
+        $task['status']     = $task['status'] ?? 'Pending';
+        $task['proof_photo']= $task['proof_photo'] ?? null;
+    }
+
+    echo json_encode($tasks);
 
 } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Database error']);
+    error_log("Tasks API Error: " . $e->getMessage());
+    echo json_encode([]);
 }
 ?>

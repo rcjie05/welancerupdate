@@ -3,45 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WeLancer: Role-Based Project System</title>
+    <title>WeLancer 2025 - Role-Based System</title>
 
-    <!-- FONTS -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-    <!-- FONT‑AWESOME (for sidebar icons) -->
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- MAIN STYLE -->
+    <!-- Beautiful Modern CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- FLOATING BACKGROUND ELEMENTS -->
-    <div class="floating-elements" id="floating-bg">
-        <span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span>
+    <!-- CENTERED LOGIN SCREEN -->
+    <div class="login-wrapper">
+        <div class="login-container">
+            <h1>WeLancer</h1>
+            <p>A Modern Role-Based Project & Task System</p>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
+                
+                <button type="submit" class="btn-primary">Login</button>
+                <div id="login-message"></div>
+            </form>
+
+            <small style="margin-top:30px;display:block;">
+                Test accounts: <strong>admin</strong>, <strong>manager</strong>, <strong>member</strong> → password: <code>password</code>
+            </small>
+        </div>
     </div>
 
-    <!-- LOGIN SCREEN -->
-    <div class="login-container">
-        <h1>WeLancer</h1>
-        <p>A Role-Based Project & Task Management System</p>
-        <form id="loginForm">
-            <div class="input-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="manager or member" required>
-            </div>
-            <div class="input-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" value="password" required>
-            </div>
-            <button type="submit" class="btn-primary">Login</button>
-            <div id="login-message" class="error-message"></div>
-        </form>
-    </div>
-
-    <!-- APP ROOT (dashboard + pages) -->
+    <!-- MAIN APP (hidden until login) -->
     <div id="app-root"></div>
 
     <script src="script.js"></script>
