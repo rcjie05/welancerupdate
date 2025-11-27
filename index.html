@@ -9,40 +9,59 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <!-- Beautiful Modern CSS -->
+    <!-- Your Final Masterpiece CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- CENTERED LOGIN SCREEN -->
+    <!-- EPIC 2025 LOGIN PAGE -->
     <div class="login-wrapper">
         <div class="login-container">
-            <h1>WeLancer</h1>
-            <p>A Modern Role-Based Project & Task System</p>
             
-            <form id="loginForm">
-                <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter username" required>
-                </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Enter password" required>
-                </div>
+            <!-- Logo + Title -->
+            <div class="logo-section">
+                <img src="images/Welancer2.png" 
+                     alt="WeLancer" 
+                     class="login-logo"
+                     onerror="this.src='https://i.imgur.com/8iK8z7P.png'">
                 
-                <button type="submit" class="btn-primary">Login</button>
-                <div id="login-message"></div>
+                <h1>WeLancer</h1>
+                <p>WE FIND THE BETTER FOR YOU</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder=" " required autocomplete="username">
+                    <label>Username</label>
+                    <i class="fas fa-user"></i>
+                </div>
+
+                <div class="input-group">
+                    <input type="password" id="password" placeholder=" " required autocomplete="current-password">
+                    <label>Password</label>
+                    <i class="fas fa-lock"></i>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    <span>Enter WeLancer</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+
+                <div id="login-message" class="login-message"></div>
             </form>
 
-            <small style="margin-top:30px;display:block;">
-                
-            </small>
+            <!-- Footer -->
+            <div class="login-footer">
+                <p>© 2025 WeLancer • Built with <span style="color:#ec4899">♥</span> & Future</p>
+            </div>
         </div>
     </div>
 
-    <!-- MAIN APP (hidden until login) -->
+    <!-- MAIN DASHBOARD (appears after login) -->
     <div id="app-root"></div>
 
+    <!-- Your script.js (already perfect) -->
     <script src="script.js"></script>
 </body>
 </html>

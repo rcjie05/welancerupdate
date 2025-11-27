@@ -358,6 +358,19 @@ async function approveTask(taskId, approve) {
         alert('Error: ' + e.message);
     }
 }
+// HR: Final Project Approval
+async function approveProject(projectId) {
+    if (!confirm('Approve this project as COMPLETED?\n\nManager: +500 pts\nMembers: +300 pts each')) return;
+
+    const res = await api('approve_project.php', { project_id: projectId });
+    if (res.success) {
+        alert(`PROJECT APPROVED!\n${res.message}\n\nMembers rewarded: ${res.members_count}`);
+        await loadAllData();
+        renderPage('projects');
+    } else {
+        alert('Error: ' + (res.error || 'Unknown'));
+    }
+}
 
 // ======================== MODAL ========================
 function openModal(title, html, onSave = () => {}) {
@@ -413,9 +426,29 @@ function renderFullApp() {
     const u = users.find(x => x.id === userId) || {};
     document.body.innerHTML = `
     <div id="app-root" style="display:flex;min-height:100vh;font-family:'Poppins',sans-serif;background:#f4f6f9;">
-        <aside id="sidebar" style="width:280px;background:#2c3e50;color:white;padding:30px;box-shadow:6px 0 25px rgba(0,0,0,0.15);">
-            <h2 style="text-align:center;margin-bottom:50px;color:#3498db;font-size:2em;">WeLancer</h2>
-            <nav style="font-size:1.15em;">
+        
+        <!-- SIDEBAR WITH EPIC LOGO — FIXED & PERFECT -->
+        <aside id="sidebar" style="width:280px;background:#2c3e50;color:white;padding:30px;box-shadow:6px 0 25px rgba(0,0,0,0.15);position:relative;overflow:hidden;display:flex;flex-direction:column;">
+            
+            <!-- PERFECTLY FITTING WeLancer LOGO – CLEAN & ELEGANT -->
+<div style="text-align:center;margin-bottom:40px;padding:18px 0;border-bottom:2px solid rgba(0,212,255,0.15);">
+    <img src="images/Welancer2.png" 
+         alt="WeLancer Logo" 
+         style="width:145px;height:auto;filter:drop-shadow(0 0 18px #00d4ff);animation:glow 4s ease-in-out infinite alternate;"
+         onerror="this.src='https://i.imgur.com/8iK8z7P.png'">
+    
+    <h2 style="margin:14px 0 0;font-size:1.85em;background:linear-gradient(135deg,#00ffff,#8b5cf6,#ff00ff);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:2px;line-height:1.2;">
+        WeLancer
+    </h2>
+    
+    <p style="margin:6px 0 0;font-size:0.82em;color:#a0d8ff;letter-spacing:1.8px;font-weight:400;opacity:0.9;">
+        WE FIND THE BETTER FOR YOU
+    </p>
+</div>
+
+            <!-- NAVIGATION -->
+            <nav style="font-size:1.15em;flex:1;">
                 <a href="#" class="active" data-page="dashboard">Dashboard</a>
                 <a href="#" data-page="projects">Projects ${['admin','hr'].includes(role)?'<span style="float:right;">+</span>':''}</a>
                 <a href="#" data-page="tasks">Tasks ${['admin','hr','manager'].includes(role)?'<span style="float:right;">+</span>':''}</a>
@@ -423,19 +456,62 @@ function renderFullApp() {
                 <a href="#" data-page="leaderboard">Leaderboard</a>
                 <a href="#" data-page="profile">Profile</a>
             </nav>
-            <div style="margin-top:auto;padding-top:40px;border-top:1px solid #444;text-align:center;">
-                <small>Logged as<br><strong style="font-size:1.2em;">${(u.role||'').toUpperCase()}</strong></small>
-            </div>
+
+            
         </aside>
+
+        <!-- MAIN CONTENT -->
         <div id="main-container" style="flex:1;padding:40px;">
-            <header style="background:white;padding:25px 35px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,0.12);margin-bottom:35px;display:flex;justify-content:space-between;align-items:center;">
-                <h1 id="page-title" style="margin:0;color:#2c3e50;font-size:2.2em;">Dashboard</h1>
-                <button onclick="location.reload()" style="padding:14px 32px;background:#e74c3c;color:white;border:none;border-radius:12px;font-weight:bold;">Logout</button>
-            </header>
+            <header style="background:rgba(205, 212, 223, 0.92);backdrop-filter:blur(20px);padding:28px 40px;border-radius:28px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(99,102,241,0.25);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+    
+    <h1 id="page-title" style="margin:0;font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#ec4899,#f59e0b);-webkit-background-clip:text;color:transparent;letter-spacing:-1.2px;">
+        Dashboard
+    </h1>
+
+    <!-- ONLY PHOTO + NAME + ROLE (EXACTLY LIKE YOUR DESIGN) -->
+    <div style="display:flex;align-items:center;gap:18px;">
+        <img src="${u.photo ? u.photo + '?v=' + Date.now() : 'https://via.placeholder.com/80x80/6366f1/ffffff?text=' + (u.name?.[0]||'U')}" 
+             style="width:62px;height:62px;border-radius:50%;object-fit:cover;border:4px solid #6366f1;box-shadow:0 0 30px rgba(99,102,241,0.6);">
+
+        <div style="text-align:left;">
+            <div style="font-size:0.95rem;color:rgba(1, 5, 12, 0.64);letter-spacing:0.5px;">Logged as</div>
+            <div style="font-size:1.55rem;color:rgba(1, 5, 12, 0.64);font-weight:800;letter-spacing:-0.5px;margin:4px 0;">
+                ${u.name || 'User'}
+            </div>
+            <span style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;padding:7px 20px;border-radius:30px;font-size:0.88rem;font-weight:bold;letter-spacing:1px;box-shadow:0 6px 20px rgba(99,102,241,0.4);">
+                ${(u.role || 'member').toUpperCase()}
+            </span>
+        </div>
+
+        <button onclick="if(confirm('Logout now? 👋')) window.location.href='logout.php'"
+        style="margin-left:30px;padding:16px 40px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;border-radius:20px;font-weight:700;font-size:1.15rem;font-family:'Inter',sans-serif;cursor:pointer;box-shadow:0 15px 40px rgba(239,68,68,0.4);transition:all 0.3s;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);"
+        onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(239,68,68,0.6)'"
+        onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 15px 40px rgba(239,68,68,0.4)'">
+    <span style="display:inline-block;transition:0.3s;">Logout</span>
+</button>
+    </div>
+</header>
             <div id="main-page-content"></div>
         </div>
     </div>`;
 
+    // Add glowing animation
+    if (!document.getElementById('logo-glow-style')) {
+        const style = document.createElement('style');
+        style.id = 'logo-glow-style';
+        style.textContent = `
+            @keyframes glow {
+                from { filter: drop-shadow(0 0 20px #00d4ff); }
+                to { filter: drop-shadow(0 0 40px #8b5cf6) drop-shadow(0 0 60px #ff00ff); }
+            }
+            #sidebar a { display:block;padding:14px 20px;margin:8px 0;border-radius:12px;transition:all 0.3s;color:#bdc3c7;text-decoration:none; }
+            #sidebar a:hover { background:rgba(255,255,255,0.1);color:white; }
+            #sidebar a.active { background:#3498db;color:white;font-weight:bold; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Navigation click handlers
     document.querySelectorAll('#sidebar a').forEach(a => {
         a.onclick = e => {
             e.preventDefault();
@@ -445,6 +521,7 @@ function renderFullApp() {
             renderPage(a.dataset.page);
         };
     });
+
     renderPage('dashboard');
 }
 
@@ -507,66 +584,175 @@ function renderPage(page) {
                 </div>
             </div>
 
-            <!-- TOP 5 -->
-            <div class="card" style="padding:35px;background:white;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1);">
-                <h3 style="text-align:center;margin-bottom:25px;">Top 5 Earners</h3>
-                <ol style="padding-left:25px;font-size:1.1em;">
-                    ${leaderboard.slice(0,5).map((u,i) => `<li style="margin:15px 0;padding:10px;background:#f8f9fa;border-radius:10px;">
-                        <strong>#${i+1} ${u.name}</strong> — ${u.score||0} pts ${i<3 ? 'Trophy' : ''}
-                    </li>`).join('')}
-                </ol>
-            </div>
-        </div>`;
+            <!-- TOP 5 EARNERS — PERFECTLY CLEAN 2025 DESIGN (NO TEXT OVERLAP) -->
+<div class="card" style="padding:32px;background:white;border-radius:24px;box-shadow:0 12px 45px rgba(0,0,0,0.12);overflow:hidden;">
+    <h3 style="text-align:center;margin:0 0 28px;font-size:1.85em;color:white;background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:18px;border-radius:16px;font-weight:800;">
+        Top 5 Earners
+    </h3>
+    <div style="display:grid;gap:16px;">
+        ${leaderboard.slice(0,5).map((u, i) => {
+            const rank = i + 1;
+            const borderColor = rank === 1 ? '#f59e0b' : rank === 2 ? '#94a3b8' : rank === 3 ? '#f97316' : '#6366f1';
+            const rankText = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : `${rank}th`;
+            const rankColor = rank === 1 ? '#fbbf24' : rank === 2 ? '#94a3b8' : rank === 3 ? '#fb923c' : '#6366f1';
+
+            return `
+            <div style="display:flex;align-items:center;background:#fafafa;padding:18px 22px;border-radius:18px;
+                        border-left:5px solid ${borderColor};box-shadow:0 6px 20px rgba(0,0,0,0.08);
+                        transition:all 0.3s;${rank <= 3 ? 'transform:scale(1.02);' : ''}"
+                 onmouseover="this.style.transform='scale(1.04)'"
+                 onmouseout="this.style.transform='${rank <= 3 ? 'scale(1.02)' : 'scale(1)'}'">
+
+                <!-- Rank Badge -->
+                <div style="font-size:2em;font-weight:900;color:${rankColor};width:68px;text-align:center;letter-spacing:-1px;">
+                    ${rankText}
+                </div>
+
+                <!-- Photo -->
+                <img src="${u.photo ? u.photo + '?v=' + Date.now() : 'https://via.placeholder.com/58x58?text=' + (u.name?.[0] || 'U')}" 
+                     style="width:58px;height:58px;border-radius:50%;object-fit:cover;
+                            border:4px solid ${borderColor};margin:0 16px;box-shadow:0 4px 16px rgba(0,0,0,0.2);">
+
+                <!-- Name & Info -->
+                <div style="flex:1;">
+                    <h4 style="margin:0;font-size:1.26em;color:#1e293b;font-weight:600;line-height:1.3;">
+                        ${u.name}
+                    </h4>
+                    <p style="margin:4px 0 0;color:#64748b;font-size:0.92em;">
+                        @${u.username} • <strong style="color:#6366f1;">${u.role.toUpperCase()}</strong>
+                    </p>
+                </div>
+
+                <!-- Score -->
+                <div style="text-align:right;">
+                    <div style="font-size:1.9em;font-weight:800;background:linear-gradient(45deg,#10b981,#34d399);
+                                -webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+                        ${u.score || 0}
+                    </div>
+                    <div style="color:#94a3b8;font-size:0.88em;margin-top:3px;">
+                        ${u.completed_tasks || 0} tasks
+                    </div>
+                </div>
+            </div>`;
+        }).join('')}
+    </div>
+</div>`;
     }
         else if (page === 'projects') {
-        const canCreate = ['admin', 'hr'].includes(role);
-        const myManagedProjects = role === 'manager' ? projects.filter(p => p.manager_id == userId) : projects;
+    const canCreate = ['admin', 'hr'].includes(role);
 
-        content.innerHTML = `
-        <div class="card" style="padding:40px;background:white;border-radius:18px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
-                <h3>All Projects (${projects.length})</h3>
-                ${canCreate ? `<button onclick="showAddProject()" style="padding:16px 36px;background:#3498db;color:white;border:none;border-radius:12px;font-weight:bold;">+ Create Project</button>` : ''}
-            </div>
+    content.innerHTML = `
+    <div class="card" style="padding:40px;background:white;border-radius:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
+            <h3>All Projects (${projects.length})</h3>
+            ${canCreate ? `<button onclick="showAddProject()" style="padding:16px 36px;background:#3498db;color:white;border:none;border-radius:12px;font-weight:bold;">+ Create Project</button>` : ''}
+        </div>
 
-            ${projects.length === 0 ? '<p style="text-align:center;padding:120px;color:#95a5a6;font-size:1.7em;">No projects created yet.</p>' : ''}
+        ${projects.length === 0 ? '<p style="text-align:center;padding:120px;color:#95a5a6;font-size:1.7em;">No projects created yet.</p>' : ''}
 
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:25px;">
-                ${projects.map(p => {
-                    const assigned = tasks.filter(t => t.project_id == p.id).length;
-                    const manager = users.find(u => u.id == p.manager_id);
-                    const progress = Math.round((assigned / p.task_quantity) * 100);
-                    const isManager = p.manager_id == userId;
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:25px;">
+            ${projects.map(p => {
+                const assigned = tasks.filter(t => t.project_id == p.id).length;
+                const manager = users.find(u => u.id == p.manager_id);
+                const progress = Math.round((assigned / p.task_quantity) * 100);
+                const isManager = p.manager_id == userId;
 
-                    return `
-                    <div style="background:#f8f9fa;padding:28px;border-radius:18px;border-left:8px solid ${progress === 100 ? '#27ae60' : progress > 50 ? '#f39c12' : '#3498db'};box-shadow:0 10px 30px rgba(0,0,0,0.1);">
-                        <h3 style="margin:0 0 12px;font-size:1.5em;color:#2c3e50;">${p.name}</h3>
-                        <p><strong>Manager:</strong> ${manager?.name || 'Unassigned'}</p>
-                        <p><strong>Points:</strong> ${p.points} points total</p>
-                        <p><strong>Tasks:</strong> ${assigned}/${p.task_quantity} assigned</p>
-                        <div style="margin:15px 0;">
-                            <div style="background:#ddd;height:12px;border-radius:6px;overflow:hidden;">
-                                <div style="width:${progress}%;height:100%;background:#3498db;transition:width 0.6s ease;"></div>
-                            </div>
-                            <small style="color:#7f8c8d;">${progress}% Complete</small>
+                // Use p.project_status (not project.project_status!)
+                const status = p.project_status || p.status || 'In Progress';
+
+                return `
+                <div style="background:rgba(205, 212, 223, 0.92);padding:28px;border-radius:18px;
+                            border-left:8px solid ${status === 'Completed' ? '#27ae60' : 
+                                                status === 'Pending HR Approval' ? '#f39c12' : 
+                                                progress === 100 ? '#e67e22' : '#3498db'};
+                            box-shadow:0 10px 30px rgba(0,0,0,0.1);position:relative;">
+                    <h3 style="margin:0 0 12px;font-size:1.5em;color:#2c3e50;">${p.name}</h3>
+                    <p><strong>Manager:</strong> ${manager?.name || 'Unassigned'}</p>
+                    <p><strong>Points:</strong> ${p.points} total • <strong>Tasks:</strong> ${assigned}/${p.task_quantity}</p>
+                    
+                    <div style="margin:15px 0;">
+                        <div style="background:#ddd;height:12px;border-radius:6px;overflow:hidden;">
+                            <div style="width:${progress}%;height:100%;background:#3498db;transition:width 0.6s ease;"></div>
                         </div>
-                        ${['admin','hr','manager'].includes(role) && (role !== 'manager' || isManager) ? 
-                            `<button onclick="showAddTask(${p.id})" style="margin-top:10px;padding:10px 20px;background:#27ae60;color:white;border:none;border-radius:10px;font-weight:bold;">
-                                Assign Tasks
-                            </button>` : ''
-                        }
-                    </div>`;
-                }).join('')}
+                        <small style="color:#7f8c8d;">${progress}% Assigned</small>
+                    </div>
+
+                    ${['admin','hr','manager'].includes(role) && (role !== 'manager' || isManager) ? 
+                        `<button onclick="showAddTask(${p.id})" style="padding:10px 20px;background:#27ae60;color:white;border:none;border-radius:10px;font-weight:bold;">
+                            Assign Tasks
+                        </button>` : ''
+                    }
+
+                    ${status === 'Pending HR Approval' && ['hr','admin'].includes(role) ? `
+                        <div style="margin-top:20px;padding:20px;background:#fff3cd;border:2px dashed #f39c12;border-radius:14px;text-align:center;">
+                            <p style="margin:0 0 15px;color:#e67e22;font-weight:bold;font-size:1.1em;">
+                                All tasks completed! Ready for HR approval
+                            </p>
+                            <button onclick="approveProject(${p.id})" 
+                                    style="padding:16px 40px;background:#e67e22;color:white;border:none;border-radius:12px;font-weight:bold;font-size:1.3em;box-shadow:0 8px 25px rgba(230,126,34,0.4);">
+                                HR APPROVE PROJECT
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    ${status === 'Completed' ? `
+    <div style="margin-top:20px;padding:25px;background:#d5f4e6;border-radius:14px;border:3px solid #27ae60;">
+        <strong style="color:#27ae60;font-size:1.4em;display:block;text-align:center;margin-bottom:15px;">
+            PROJECT FULLY COMPLETED & APPROVED BY HR
+        </strong>
+
+        <!-- Main Final Proof (big) -->
+        ${p.final_proof_photo ? `
+            <div style="text-align:center;margin-bottom:20px;">
+                <p style="color:#27ae60;font-weight:bold;">Final Selected Proof:</p>
+                <img src="${p.final_proof_photo}?v=${Date.now()}" 
+                     style="max-width:100%;max-height:400px;border-radius:12px;box-shadow:0 8px 25px rgba(0,0,0,0.2);border:4px solid #27ae60;">
             </div>
-        </div>`;
-    }
+        ` : ''}
+
+        <!-- Gallery of ALL Task Proofs -->
+        <details style="margin-top:20px;background:#fff;padding:15px;border-radius:12px;border:2px solid #27ae60;">
+            <summary style="cursor:pointer;font-weight:bold;color:#27ae60;font-size:1.1em;">
+                View All ${tasks.filter(t => t.project_id == p.id && t.proof_photo).length} Task Proofs
+            </summary>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-top:15px;">
+                ${tasks
+                  .filter(t => t.project_id == p.id && t.proof_photo && t.status === 'Completed')
+                  .map(t => `
+                    <div style="text-align:center;background:#f8f9fa;padding:12px;border-radius:10px;">
+                        <p style="margin:0 0 8px;font-size:0.9em;color:#2c3e50;"><strong>${t.title}</strong></p>
+                        <a href="${t.proof_photo}" target="_blank">
+                            <img src="${t.proof_photo}?v=${Date.now()}" 
+                                 style="width:100%;height:140px;object-fit:cover;border-radius:8px;border:2px solid #27ae60;">
+                        </a>
+                    </div>
+                  `).join('')}
+            </div>
+            ${tasks.filter(t => t.project_id == p.id && t.proof_photo && t.status === 'Completed').length === 0 
+                ? '<p style="text-align:center;color:#7f8c8d;font-style:italic;">No proofs uploaded</p>' 
+                : ''
+            }
+        </details>
+    </div>
+` : ''}
+
+                    ${status === 'Pending HR Approval' ? 
+                        `<div style="position:absolute;top:10px;right:10px;background:#e67e22;color:white;padding:6px 12px;border-radius:20px;font-size:0.8em;font-weight:bold;">
+                            AWAITING HR
+                        </div>` : ''
+                    }
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
     else if (page === 'tasks') {
         // FIXED: Force number comparison!
         const myTasks = role === 'member' 
         ? tasks.filter(t => parseInt(t.user_id) === parseInt(userId))
         : tasks;
 
-        content.innerHTML = `<div class="card" style="padding:40px;background:white;border-radius:18px;">
+        content.innerHTML = `<div class="card" style="padding:40px;background:rgba(205, 212, 223, 0.92);border-radius:18px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
                 <h3>My Tasks (${myTasks.length})</h3>
                 ${canManage ? `<button onclick="showAddTask()" style="padding:16px 36px;background:#3498db;color:white;border:none;border-radius:12px;font-weight:bold;">+ Assign Tasks</button>` : ''}
@@ -640,7 +826,7 @@ function renderPage(page) {
         </div>`;
     }
     else if (page === 'users' && role === 'admin') {
-        content.innerHTML = `<div class="card" style="padding:40px;background:white;border-radius:18px;">
+        content.innerHTML = `<div class="card" style="padding:40px;background:rgba(205, 212, 223, 0.92);border-radius:18px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:35px;">
                 <h3>User Management</h3>
                 <button onclick="showAddUser()" style="padding:16px 40px;background:#27ae60;color:white;border:none;border-radius:14px;font-weight:bold;box-shadow:0 6px 20px rgba(39,174,96,0.4);">+ Add User</button>
@@ -666,25 +852,42 @@ function renderPage(page) {
             </table>
         </div>`;
     }
-    else if (page === 'leaderboard') {
-        content.innerHTML = `<div class="card" style="padding:40px;background:white;border-radius:18px;">
-            <h3 style="text-align:center;margin-bottom:30px;font-size:2em;">Leaderboard</h3>
-            <table style="width:100%;border-collapse:collapse;">
-                <thead style="background:#2c3e50;color:white;"><tr><th>Rank</th><th>Name</th><th>Role</th><th>Score</th><th>Tasks</th></tr></thead>
-                <tbody>${leaderboard.map((u,i)=>`
-                    <tr style="border-bottom:1px solid #eee;">
-                        <td style="padding:18px;text-align:center;font-weight:bold;color:#3498db;font-size:1.3em;">${i+1}</td>
-                        <td style="padding:18px;font-weight:600;">${u.name}</td>
-                        <td style="padding:18px;">${u.role}</td>
-                        <td style="padding:18px;font-weight:bold;color:#27ae60;">${u.score||0}</td>
-                        <td style="padding:18px;">${u.completed_tasks||0}</td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>
+        else if (page === 'leaderboard') {
+        content.innerHTML = `<div class="card" style="padding:40px;background:rgba(205, 212, 223, 0.92);border-radius:18px;">
+            <h3 style="text-align:center;margin-bottom:40px;font-size:2em;color:#2c3e50;">Leaderboard</h3>
+            <div style="display:grid;gap:20px;">
+                ${leaderboard.map((u, i) => {
+                    const rankColor = i === 0 ? '#f1c40f' : i === 1 ? '#95a5a6' : i === 2 ? '#e67e22' : '#34495e';
+                    const rankBadge = i < 3 ? ['1st Place', '2nd Place', '3rd Place'][i] : `#${i+1}`;
+                    return `
+                    <div style="display:flex;align-items:center;background:#f8f9fa;padding:20px;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,0.1);border-left:6px solid ${rankColor};">
+                        <div style="font-size:2.5em;font-weight:bold;color:${rankColor};width:80px;text-align:center;">
+                            ${rankBadge}
+                        </div>
+                        <img src="${u.photo ? u.photo + '?v=' + Date.now() : 'https://via.placeholder.com/70x70?text=' + (u.name?.[0] || 'U')}" 
+                             style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:4px solid ${rankColor};margin:0 20px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+                        <div style="flex:1;">
+                            <h4 style="margin:0;font-size:1.4em;color:#2c3e50;">${u.name}</h4>
+                            <p style="margin:5px 0 0;color:#7f8c8d;font-size:1em;">
+                                @${u.username} • <strong style="color:#3498db;">${u.role.toUpperCase()}</strong>
+                            </p>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:2.2em;font-weight:bold;color:#27ae60;">
+                                ${u.score || 0}
+                            </div>
+                            <div style="color:#7f8c8d;font-size:0.9em;">points</div>
+                            <div style="margin-top:8px;color:#95a5a6;font-size:0.9em;">
+                                ${u.completed_tasks || 0} tasks completed
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
         </div>`;
     }
     else if (page === 'profile') {
-    content.innerHTML = `<div class="card" style="max-width:750px;margin:0 auto;padding:40px;background:white;border-radius:18px;">
+    content.innerHTML = `<div class="card" style="max-width:750px;margin:0 auto;padding:40px;background:rgba(205, 212, 223, 0.92);border-radius:18px;">
         <h3 style="text-align:center;color:#2c3e50;font-size:2em;">My Profile</h3>
         <div style="text-align:center;margin:40px 0;">
             <img id="profilePhoto" src="${currentUser.photo ? currentUser.photo + '?v=' + Date.now() : 'https://via.placeholder.com/160?text=' + (currentUser.name?.[0] || 'U')}" 

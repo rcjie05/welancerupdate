@@ -21,9 +21,11 @@ CREATE TABLE `projects` (
   `points_per_task` int(11) NOT NULL DEFAULT 20,
   `status` enum('In Progress','Completed','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'In Progress',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `final_proof_photo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `project_status` enum('In Progress','Pending HR Approval','Completed','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'In Progress',
   PRIMARY KEY (`id`),
-  KEY `idx_manager` (`manager_id`),
-  KEY `idx_status` (`status`)
+  KEY `manager_id` (`manager_id`),
+  KEY `idx_project_status` (`project_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tasks (
