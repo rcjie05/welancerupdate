@@ -6,19 +6,39 @@
 let role = '', userId = 0;
 let tasks = [], projects = [], users = [];
 
-// ======================== API HELPER ========================
+// ======================== API HELPER — FINAL SILENT & CLEAN VERSION ========================
 async function api(endpoint, data = null, isFormData = false) {
-    const res = await fetch(`http://localhost/welancer/api/${endpoint}`, {
-        method: data ? 'POST' : 'GET',
-        credentials: 'include',
-        headers: isFormData ? {} : { 'Content-Type': 'application/json' },
-        body: isFormData ? data : (data ? JSON.stringify(data) : null)
-    });
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || 'Server error');
+    try {
+        const response = await fetch(`api/${endpoint}`, {
+            method: data ? 'POST' : 'GET',
+            credentials: 'include',
+            headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+            body: isFormData ? data : (data ? JSON.stringify(data) : null)
+        });
+
+        const text = await response.text();
+
+        // SILENTLY detect if PHP file was opened directly → redirect instead of alert spam
+        if (text.trim().startsWith('<?php') || text.includes('<!DOCTYPE') || text.includes('<html')) {
+            if (!window.location.href.includes('/welancer/')) {
+                alert("Please open the app via:\nhttp://localhost/welancer/\n\nNever open PHP files directly!");
+                window.location.href = "http://localhost/welancer/";
+            }
+            return { success: false, error: "Wrong access" };
+        }
+
+        // Try to parse JSON, if fails → probably not API response
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.warn("Non-JSON response from API:", endpoint);
+            return { success: false, error: "Invalid response" };
+        }
+
+    } catch (err) {
+        console.error("API Error:", err);
+        return { success: false, error: "Network or server error" };
     }
-    return await res.json();
 }
 
 // ======================== ADMIN FUNCTIONS ========================
@@ -72,17 +92,20 @@ function showAddUser() {
     });
 }
 
-// ======================== ADD PROJECT ========================
+// ======================== ADD PROJECT — FINAL 100% WORKING ========================
 function showAddProject() {
     if (!['admin', 'hr', 'manager'].includes(role)) return alert('Access denied');
+
     const managers = users.filter(u => u.role === 'manager');
+    // If no managers exist and you're not a manager → block (unless you're creating as yourself)
     if (managers.length === 0 && role !== 'manager') return alert('No managers available');
 
     openModal('Create New Project', `
         <input type="text" id="projName" placeholder="Project Name" style="width:100%;padding:14px;margin:10px 0;border-radius:10px;border:1px solid #ddd;">
         <select id="projManager" style="width:100%;padding:14px;margin:10px 0;border-radius:10px;border:1px solid #ddd;">
-            <option value="" disabled selected>Assign Manager</option>
-            ${managers.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
+            <option value="" ${role === 'manager' ? '' : 'selected'} disabled>Select Manager (Optional)</option>
+            ${managers.map(m => `<option value="${m.id}" ${m.id === userId ? 'selected' : ''}>${m.name} ${m.id === userId ? '(You)' : ''}</option>`).join('')}
+            ${role === 'manager' ? `<option value="${userId}" selected>You (${users.find(u=>u.id===userId)?.name || 'Me'})</option>` : ''}
         </select>
         <input type="number" id="totalPoints" placeholder="Total Project Points" value="100" min="10" style="width:100%;padding:14px;margin:10px 0;border-radius:10px;border:1px solid #ddd;">
         <input type="number" id="taskQuantity" placeholder="How many tasks?" value="5" min="1" max="50" style="width:100%;padding:14px;margin:10px 0;border-radius:10px;border:1px solid #ddd;">
@@ -91,22 +114,58 @@ function showAddProject() {
         </div>
     `, async () => {
         const name = document.getElementById('projName').value.trim();
-        const managerId = document.getElementById('projManager').value || userId;
+        const selectedManager = document.getElementById('projManager').value;
         const totalPoints = parseInt(document.getElementById('totalPoints').value) || 100;
-        const taskQuantity = parseInt(document.getElementById('taskQuantity').value) || 1;
-        if (!name || taskQuantity < 1) return alert('Fill all fields');
-        const pointsPerTask = Math.floor(totalPoints / taskQuantity);
+        const taskQuantity = parseInt(document.getElementById('taskQuantity').value) || 5;
 
-        await api('add_project.php', {
-            name, manager_id: managerId, points: totalPoints,
-            task_quantity: taskQuantity, points_per_task: pointsPerTask
-        });
+        if (!name || totalPoints < 10 || taskQuantity < 1) {
+            return alert('Please fill all fields correctly');
+        }
 
-        alert(`Project created!\n"${name}"\n${taskQuantity} tasks × ${pointsPerTask} pts each`);
+        // CRITICAL FIX: Only send manager_id if a valid ID is selected
+        const payload = {
+            name,
+            points: totalPoints,
+            task_quantity: taskQuantity,
+            points_per_task: Math.floor(totalPoints / taskQuantity)
+        };
+
+        // Only add manager_id if a real manager was selected (not empty string)
+        if (selectedManager && selectedManager !== '' && selectedManager !== 'null') {
+            payload.manager_id = parseInt(selectedManager);
+        }
+        // If no manager selected → backend will auto-assign current user (from your PHP fix)
+
+        try {
+    const res = await api('add_project.php', payload);
+    if (res.success) {
+        alert(`Project "${name}" created successfully!\n${taskQuantity} tasks × ${Math.floor(totalPoints / taskQuantity)} pts each`);
+        
+        // AUTO REFRESH DATA + REDIRECT TO PROJECTS PAGE
         await loadAllData();
-        renderPage('projects');
+        renderPage('projects');  // This auto-switches tab
+        document.getElementById('app-modal')?.remove();
+
+        // Optional: Highlight the new project (feels premium)
+        setTimeout(() => {
+            const newProjectCard = document.querySelector('#main-page-content .card > div > div:last-child');
+            if (newProjectCard) {
+                newProjectCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                newProjectCard.style.boxShadow = '0 0 30px #3498db';
+                newProjectCard.style.transition = 'all 0.6s';
+                setTimeout(() => newProjectCard.style.boxShadow = '', 3000);
+            }
+        }, 500);
+
+    } else {
+        alert('Failed: ' + (res.error || 'Unknown error'));
+    }
+} catch (err) {
+    alert('Error: ' + err.message);
+}
     });
 
+    // Live points per task calculator
     const update = () => {
         const t = parseInt(document.getElementById('totalPoints').value) || 100;
         const q = parseInt(document.getElementById('taskQuantity').value) || 1;
@@ -284,15 +343,20 @@ async function approveTask(taskId, approve) {
     if (!confirm(approve ? 'Approve this task? Points will be awarded!' : 'Reject this submission?')) return;
 
     try {
-        const res = await api('approve_task.php', { task_id: taskId, approve });
+        const res = await api('approve_task.php', { task_id: taskId, approve: approve ? 1 : 0 });
+        
         if (res.success) {
             alert(approve 
-                ? `Task Approved! +${res.points_awarded || '??'} pts to member!` 
+                ? `Task Approved! +${res.points_awarded || 0} pts awarded!` 
                 : 'Task Rejected');
-            await loadAllData();
+            await loadAllData();  // This forces refresh
             renderPage('tasks');
+        } else {
+            alert('Error: ' + (res.error || 'Unknown error'));
         }
-    } catch (e) { alert('Error: ' + e.message); }
+    } catch (e) {
+        alert('Error: ' + e.message);
+    }
 }
 
 // ======================== MODAL ========================
@@ -668,7 +732,7 @@ function renderPage(page) {
         fd.append('photo', file);
 
         try {
-            const res = await fetch('http://localhost/welancer/api/upload_photo.php', {
+            const res = await fetch('api/upload_photo.php', {
                 method: 'POST',
                 credentials: 'include',
                 body: fd

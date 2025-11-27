@@ -12,16 +12,19 @@ CREATE TABLE users (
     photo VARCHAR(255) DEFAULT NULL
 ) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-CREATE TABLE projects (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
-    manager_id INT DEFAULT NULL,
-    points INT NOT NULL DEFAULT 100,
-    task_quantity INT NOT NULL DEFAULT 5,
-    points_per_task INT NOT NULL DEFAULT 20,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE TABLE `projects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `manager_id` int(11) DEFAULT NULL,
+  `points` int(11) NOT NULL DEFAULT 100,
+  `task_quantity` int(11) NOT NULL DEFAULT 5,
+  `points_per_task` int(11) NOT NULL DEFAULT 20,
+  `status` enum('In Progress','Completed','Cancelled') COLLATE utf8mb4_unicode_ci DEFAULT 'In Progress',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_manager` (`manager_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,

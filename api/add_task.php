@@ -11,7 +11,6 @@ if (!isset($_SESSION['id'])) {
 $userId = (int)$_SESSION['id'];
 $role   = $_SESSION['role'] ?? 'member';
 
-
 $data = json_decode(file_get_contents('php://input'), true);
 $title      = $data['title'] ?? '';
 $project_id = $data['project_id'] ?? 0;

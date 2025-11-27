@@ -1,30 +1,28 @@
 <?php
-// api/projects.php — 100% FIXED: Everyone sees what they should!
 session_start();
 require 'config.php';
-
 header('Content-Type: application/json');
 
+// CRITICAL: Use correct session key!
 if (!isset($_SESSION['id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Login required']);
+    echo json_encode([]);
     exit;
 }
+
 $userId = (int)$_SESSION['id'];
 $role   = $_SESSION['role'] ?? 'member';
 
 try {
     if ($role === 'admin' || $role === 'hr') {
-        // Admin & HR see ALL projects
+        // Admin & HR see EVERYTHING
         $stmt = $pdo->query("
             SELECT p.*, u.name AS manager_name 
             FROM projects p 
             LEFT JOIN users u ON p.manager_id = u.id 
             ORDER BY p.id DESC
         ");
-    } 
-    elseif ($role === 'manager') {
-        // Manager sees ONLY his own projects
+    } elseif ($role === 'manager') {
+        // Manager sees only his projects
         $stmt = $pdo->prepare("
             SELECT p.*, u.name AS manager_name 
             FROM projects p 
@@ -33,9 +31,8 @@ try {
             ORDER BY p.id DESC
         ");
         $stmt->execute([$userId]);
-    } 
-    else {
-        // Members see projects they have tasks in
+    } else {
+        // Member sees only projects they have tasks in
         $stmt = $pdo->prepare("
             SELECT DISTINCT p.*, u.name AS manager_name
             FROM projects p
@@ -49,7 +46,6 @@ try {
 
     $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Force IDs to int (prevents JS bugs)
     foreach ($projects as &$p) {
         $p['id'] = (int)$p['id'];
         $p['manager_id'] = $p['manager_id'] ? (int)$p['manager_id'] : null;

@@ -1,8 +1,6 @@
 <?php
-// api/tasks.php — 100% FIXED: MEMBERS NOW SEE THEIR TASKS!
 session_start();
 require 'config.php';
-
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['id'])) {
@@ -23,8 +21,9 @@ try {
             LEFT JOIN users u ON t.user_id = u.id
             ORDER BY t.id DESC
         ");
+        $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        // Member → sees ONLY their own tasks
+        // Member → only their tasks
         $stmt = $pdo->prepare("
             SELECT t.*, p.name AS project_name, u.name AS member_name
             FROM tasks t
@@ -34,11 +33,9 @@ try {
             ORDER BY t.id DESC
         ");
         $stmt->execute([$userId]);
+        $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // CRITICAL: Force all IDs to integer (fixes JS comparison bug)
     foreach ($tasks as &$task) {
         $task['id']         = (int)$task['id'];
         $task['project_id'] = (int)$task['project_id'];
